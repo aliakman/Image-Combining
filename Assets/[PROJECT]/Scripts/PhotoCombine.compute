@@ -1,0 +1,29 @@
+#pragma kernel PhotoCombine
+
+RWTexture2D<float4> resultTex;
+
+Texture2D<float4> leftTex;
+Texture2D<float4> rightTex;
+
+float leftWidth;
+
+uint texWidth;
+uint texHeight;
+
+SamplerState  linearClampSampler;
+
+[numthreads(1, 1, 1)]
+void PhotoCombine(uint3 _id : SV_DispatchThreadID) {
+    float2 _uv = _id.xy / float2(texWidth, texHeight);
+
+    float2 _texCoord;
+    _texCoord.x = _uv.x < 0.5 ? _uv.x * 2 : (_uv.x - 0.5) * 2 + leftWidth;
+    _texCoord.y = _uv.y;
+
+    float4 _leftColor = leftTex.SampleLevel(linearClampSampler, _texCoord, 0);
+    float4 _rightColor = rightTex.SampleLevel(linearClampSampler, _uv, 0);
+
+    float4 _finalColor = lerp(_leftColor, _rightColor, step(0.5, _uv.x));
+
+    resultTex[_id.xy] = _finalColor;
+}
